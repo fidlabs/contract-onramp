@@ -46,7 +46,7 @@ Clients can be locked via `lock(address client, uint256 amount)` to prevent furt
 
 ### Fallback Proxying
 
-Unrecognized function calls are forwarded directly to the `CLIENT_CONTRACT`. This allows `OnRamp` to act as a transparent proxy when needed.
+Unrecognized function calls are forwarded directly to the `CLIENT_CONTRACT` if called by a manager. This allows `OnRamp` to act as a transparent proxy when needed.
 
 ## Functions
 
@@ -101,7 +101,7 @@ Unrecognized function calls are forwarded directly to the `CLIENT_CONTRACT`. Thi
 2. Open your Safe account.
 3. Go to Apps -> Transaction builder
 4. Enter address of the OnRamp contract
-5. Enter [IOnRampExtended.json](./abis/IOnRampExtended.json) file as ABI
+5. Enter [IOnRamp.json](./abis/IOnRamp.json) file as ABI
 6. Select the [function](#functions) you want to call. In addition to OnRamp functions, some Client smart contract functions are available as well (such as managing SPs, deviation and decreasing allowance without locking the client)
 7. Fill arguments, if any
 8. Click Add Transaction

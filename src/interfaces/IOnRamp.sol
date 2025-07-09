@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.30;
 
 // solhint-disable-next-line import-path-check
 import {DataCapTypes} from "filecoin-solidity/v0.8/types/DataCapTypes.sol";
@@ -96,4 +96,47 @@ interface IOnRamp {
     /// @param client Client address
     /// @return window Current window index
     function clientWindow(address client) external view returns (uint256 window);
+
+    /**
+     * @notice This function sets the list of allowed storage providers for a specific client
+     * @param client The address of the client for whom the allowed storage providers are being set
+     * @param allowedSPs_ The list of allowed storage providers
+     */
+    function addAllowedSPsForClient(address client, uint64[] memory allowedSPs_) external;
+
+    /**
+     * @notice This function removes storage providers from the allowed list for a specific client
+     * @param client The address of the client for whom the allowed storage providers are being removed
+     * @param disallowedSPs_ The list of storage providers to remove
+     */
+    function removeAllowedSPsForClient(address client, uint64[] memory disallowedSPs_) external;
+
+    /**
+     * @notice This function sets the maximum allowed deviation from a fair
+     * distribution of data between storage providers.
+     * @param client The address of the client
+     * @param maxDeviation Max allowed deviation. 0 = no slack, DENOMINATOR = 100% (based on total allocations of user)
+     */
+    function setClientMaxDeviationFromFairDistribution(address client, uint256 maxDeviation) external;
+
+    /**
+     * @notice This function sets the list of allowed storage providers for a specific client
+     * @param client The address of the client for whom the allowed storage providers are being set
+     * @param allowedSPs_ abi.encodePacked tuple of uint64's representing SPs to allow
+     */
+    function addAllowedSPsForClientPacked(address client, bytes calldata allowedSPs_) external;
+
+    /**
+     * @notice This function removes storage providers from the allowed list for a specific client
+     * @param client The address of the client for whom the allowed storage providers are being removed
+     * @param disallowedSPs_ abi.encodePacked tuple of uint64's representing SPs to disallow
+     */
+    function removeAllowedSPsForClientPacked(address client, bytes calldata disallowedSPs_) external;
+
+    /**
+     * @notice Decrease client allowance
+     * @param client Client whose allowance is reduced
+     * @param amount Amount to decrease the allowance
+     */
+    function decreaseAllowance(address client, uint256 amount) external;
 }

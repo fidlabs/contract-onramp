@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.30;
+pragma solidity ^0.8.30;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -15,6 +15,11 @@ contract MockClient is IClient, Ownable2Step {
     function increaseAllowance(address, uint256) external view onlyOwner {}
     function decreaseAllowance(address, uint256) external pure {}
     function noop(uint256) external pure {}
+    function addAllowedSPsForClient(address, uint64[] calldata) external pure {}
+    function removeAllowedSPsForClient(address, uint64[] calldata) external pure {}
+    function addAllowedSPsForClientPacked(address, bytes calldata) external pure {}
+    function removeAllowedSPsForClientPacked(address, bytes calldata) external pure {}
+    function setClientMaxDeviationFromFairDistribution(address, uint256) external pure {}
 }
 
 contract OnRampTest is Test {
@@ -295,5 +300,71 @@ contract OnRampTest is Test {
         onRamp.increaseAllowance(manager, 400);
         vm.expectRevert(IOnRamp.RateLimited.selector);
         onRamp.increaseAllowance(manager, 1);
+    }
+
+    function testClientContractFunctionsForwardedCorrectly() public {
+        uint64[] memory arr;
+
+        vm.startPrank(allocator);
+
+        vm.expectCall(address(mockClient), abi.encodeCall(IClient.addAllowedSPsForClient, (manager, arr)));
+        onRamp.addAllowedSPsForClient(manager, arr);
+
+        vm.expectCall(address(mockClient), abi.encodeCall(IClient.removeAllowedSPsForClient, (manager, arr)));
+        onRamp.removeAllowedSPsForClient(manager, arr);
+
+        vm.expectCall(address(mockClient), abi.encodeCall(IClient.addAllowedSPsForClientPacked, (manager, "")));
+        onRamp.addAllowedSPsForClientPacked(manager, "");
+
+        vm.expectCall(address(mockClient), abi.encodeCall(IClient.removeAllowedSPsForClientPacked, (manager, "")));
+        onRamp.removeAllowedSPsForClientPacked(manager, "");
+
+        vm.expectCall(
+            address(mockClient), abi.encodeCall(IClient.setClientMaxDeviationFromFairDistribution, (manager, 5))
+        );
+        onRamp.setClientMaxDeviationFromFairDistribution(manager, 5);
+
+        vm.expectCall(address(mockClient), abi.encodeCall(IClient.decreaseAllowance, (manager, 5)));
+        onRamp.decreaseAllowance(manager, 5);
+    }
+
+    function testClientContractFunctionsForwardingRespectsPermissions() public {
+        uint64[] memory arr;
+
+        vm.startPrank(allocator);
+        onRamp.addAllowedSPsForClient(manager, arr);
+        onRamp.removeAllowedSPsForClient(manager, arr);
+        onRamp.addAllowedSPsForClientPacked(manager, "");
+        onRamp.removeAllowedSPsForClientPacked(manager, "");
+        onRamp.setClientMaxDeviationFromFairDistribution(manager, 5);
+        onRamp.decreaseAllowance(manager, 5);
+
+        vm.startPrank(manager);
+        onRamp.addAllowedSPsForClient(manager, arr);
+        onRamp.removeAllowedSPsForClient(manager, arr);
+        onRamp.addAllowedSPsForClientPacked(manager, "");
+        onRamp.removeAllowedSPsForClientPacked(manager, "");
+        onRamp.setClientMaxDeviationFromFairDistribution(manager, 5);
+        onRamp.decreaseAllowance(manager, 5);
+
+        vm.stopPrank();
+
+        vm.expectRevert(IOnRamp.Unauthorized.selector);
+        onRamp.addAllowedSPsForClient(manager, arr);
+
+        vm.expectRevert(IOnRamp.Unauthorized.selector);
+        onRamp.removeAllowedSPsForClient(manager, arr);
+
+        vm.expectRevert(IOnRamp.Unauthorized.selector);
+        onRamp.addAllowedSPsForClientPacked(manager, "");
+
+        vm.expectRevert(IOnRamp.Unauthorized.selector);
+        onRamp.removeAllowedSPsForClientPacked(manager, "");
+
+        vm.expectRevert(IOnRamp.Unauthorized.selector);
+        onRamp.setClientMaxDeviationFromFairDistribution(manager, 5);
+
+        vm.expectRevert(IOnRamp.Unauthorized.selector);
+        onRamp.decreaseAllowance(manager, 5);
     }
 }

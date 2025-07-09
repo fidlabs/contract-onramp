@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.30;
 
 import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {Pausable} from "openzeppelin-contracts/contracts/utils/Pausable.sol";
@@ -82,16 +82,19 @@ contract OnRamp is IOnRamp, AccessControl, Pausable, Multicall {
         _unpause();
     }
 
+    modifier onlyManagerOrAllocator() {
+        if (!hasRole(MANAGER_ROLE, msg.sender) && !hasRole(ALLOCATOR_ROLE, msg.sender)) {
+            revert Unauthorized();
+        }
+        _;
+    }
+
     /// @notice Increases the allowance for a specific client, subject to rate limiting
     /// @param client The address of the client
     /// @param amount The amount to increase the allowance by
     /// @dev Respects per-window limits and access control
-    function increaseAllowance(address client, uint256 amount) external whenNotPaused {
+    function increaseAllowance(address client, uint256 amount) external whenNotPaused onlyManagerOrAllocator {
         ClientInfo storage c = clients[client];
-
-        if (!hasRole(MANAGER_ROLE, msg.sender) && !hasRole(ALLOCATOR_ROLE, msg.sender)) {
-            revert Unauthorized();
-        }
 
         if (c.locked) {
             revert ClientLocked();
@@ -197,6 +200,70 @@ contract OnRamp is IOnRamp, AccessControl, Pausable, Multicall {
     /// @return window Current window index
     function clientWindow(address client) external view returns (uint256 window) {
         return _window(clients[client]);
+    }
+
+    /**
+     * @notice This function sets the list of allowed storage providers for a specific client
+     * @param client The address of the client for whom the allowed storage providers are being set
+     * @param allowedSPs_ The list of allowed storage providers
+     */
+    function addAllowedSPsForClient(address client, uint64[] calldata allowedSPs_) external onlyManagerOrAllocator {
+        CLIENT_CONTRACT.addAllowedSPsForClient(client, allowedSPs_);
+    }
+
+    /**
+     * @notice This function removes storage providers from the allowed list for a specific client
+     * @param client The address of the client for whom the allowed storage providers are being removed
+     * @param disallowedSPs_ The list of storage providers to remove
+     */
+    function removeAllowedSPsForClient(address client, uint64[] calldata disallowedSPs_)
+        external
+        onlyManagerOrAllocator
+    {
+        CLIENT_CONTRACT.removeAllowedSPsForClient(client, disallowedSPs_);
+    }
+
+    /**
+     * @notice This function sets the maximum allowed deviation from a fair
+     * distribution of data between storage providers.
+     * @param client The address of the client
+     * @param maxDeviation Max allowed deviation. 0 = no slack, DENOMINATOR = 100% (based on total allocations of user)
+     */
+    function setClientMaxDeviationFromFairDistribution(address client, uint256 maxDeviation)
+        external
+        onlyManagerOrAllocator
+    {
+        CLIENT_CONTRACT.setClientMaxDeviationFromFairDistribution(client, maxDeviation);
+    }
+
+    /**
+     * @notice This function sets the list of allowed storage providers for a specific client
+     * @param client The address of the client for whom the allowed storage providers are being set
+     * @param allowedSPs_ abi.encodePacked tuple of uint64's representing SPs to allow
+     */
+    function addAllowedSPsForClientPacked(address client, bytes calldata allowedSPs_) external onlyManagerOrAllocator {
+        CLIENT_CONTRACT.addAllowedSPsForClientPacked(client, allowedSPs_);
+    }
+
+    /**
+     * @notice This function removes storage providers from the allowed list for a specific client
+     * @param client The address of the client for whom the allowed storage providers are being removed
+     * @param disallowedSPs_ abi.encodePacked tuple of uint64's representing SPs to disallow
+     */
+    function removeAllowedSPsForClientPacked(address client, bytes calldata disallowedSPs_)
+        external
+        onlyManagerOrAllocator
+    {
+        CLIENT_CONTRACT.removeAllowedSPsForClientPacked(client, disallowedSPs_);
+    }
+
+    /**
+     * @notice Decrease client allowance
+     * @param client Client whose allowance is reduced
+     * @param amount Amount to decrease the allowance
+     */
+    function decreaseAllowance(address client, uint256 amount) external onlyManagerOrAllocator {
+        CLIENT_CONTRACT.decreaseAllowance(client, amount);
     }
 
     /// @notice Forwards unknown calls to the CLIENT_CONTRACT using call
