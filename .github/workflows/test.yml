@@ -1,0 +1,67 @@
+name: Test Solidity Contracts
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  lint:
+    name: Solhint linter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+
+      - name: Install solhint
+        run: npm install -g solhint@^6.0.0
+
+      - name: Run solhint
+        run: solhint 'src/**/*.sol'
+
+  build_and_test:
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.2.3
+
+      - name: ⚙️ Install lcov
+        run: sudo apt-get -y install lcov
+
+      - name: Run Forge fmt check
+        run: |
+          forge --version
+          forge fmt --check
+        id: fmt_solidity
+
+      - name: Run Forge tests
+        run: |
+          forge test -vvv
+        id: test_solidity
+
+      - name: Check test coverage
+        run: ./ci/check-full-coverage.sh
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --build-info --sizes
+        id: build_solidity
+
+      - name: Check if ABIs are up-to-date
+        run: ./ci/check-abis.sh
