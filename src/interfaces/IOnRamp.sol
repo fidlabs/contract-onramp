@@ -7,7 +7,7 @@ import {DataCapTypes} from "filecoin-solidity/v0.8/types/DataCapTypes.sol";
 /// @title OnRamp Rate-Limited Client Allowance Manager
 /// @author FIDL
 /// @notice This contract manages client allowance increases to a Filecoin IClient with per-window rate limiting
-/// @dev Uses AccessControl, Multicall and Pausable from OpenZeppelin. Proxies unknown calls to a `CLIENT_CONTRACT` via `call`.
+/// @dev Uses AccessControlEnumerable, Multicall and Pausable from OpenZeppelin. Proxies unknown calls to a `CLIENT_CONTRACT` via `call`.
 interface IOnRamp {
     /// @dev Thrown when the function shouldn't be called
     error Forbidden();

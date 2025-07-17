@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {AccessControlEnumerable} from "openzeppelin-contracts/contracts/access/extensions/AccessControlEnumerable.sol";
 import {Pausable} from "openzeppelin-contracts/contracts/utils/Pausable.sol";
 import {Multicall} from "openzeppelin-contracts/contracts/utils/Multicall.sol";
 
@@ -15,8 +15,8 @@ import {IOnRamp} from "./interfaces/IOnRamp.sol";
 /// @title OnRamp Rate-Limited Client Allowance Manager
 /// @author FIDL
 /// @notice This contract manages client allowance increases to a Filecoin IClient with per-window rate limiting
-/// @dev Uses AccessControl, Multicall and Pausable from OpenZeppelin. Proxies unknown calls to a `CLIENT_CONTRACT` via `call`.
-contract OnRamp is IOnRamp, AccessControl, Pausable, Multicall {
+/// @dev Uses AccessControlEnumerable, Multicall and Pausable from OpenZeppelin. Proxies unknown calls to a `CLIENT_CONTRACT` via `call`.
+contract OnRamp is IOnRamp, AccessControlEnumerable, Pausable, Multicall {
     /// @notice Role identifier for managers
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
